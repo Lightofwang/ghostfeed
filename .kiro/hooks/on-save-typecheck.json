@@ -1,1 +1,0 @@
-{"action":{"command":"npx tsc --noEmit","type":"command"},"description":"Run tsc --noEmit when a TypeScript file is saved, so type errors are caught immediately.","name":"typecheck-on-save","trigger":{"pattern":"src/**/*.ts*","type":"file-save"}}
