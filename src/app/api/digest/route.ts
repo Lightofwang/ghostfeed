@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ruleBasedDigest, topItemsLast24h } from "@/lib/digest";
+import { topItemsLast24h } from "@/lib/digest";
+import { createDigestProvider, RuleBasedProvider } from "@/lib/digest-provider";
 import type { FeedItem } from "@/lib/types";
 
 /**
@@ -10,29 +11,18 @@ import type { FeedItem } from "@/lib/types";
 export async function POST(req: NextRequest) {
   const { items } = (await req.json()) as { items: FeedItem[] };
   const top = topItemsLast24h(items ?? []);
-  const baseUrl = process.env.LLM_BASE_URL;
-  const apiKey = process.env.LLM_API_KEY;
-  if (baseUrl && apiKey) {
-    try {
-      const res = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model: process.env.LLM_MODEL ?? "gpt-4o-mini",
-          messages: [
-            { role: "system", content: "Summarise these RSS headlines in 5 short bullet points, plain English." },
-            { role: "user", content: top.map((i) => `- ${i.title} (${i.sourceTitle})`).join("\n") || "No new items." },
-          ],
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const text = data?.choices?.[0]?.message?.content as string | undefined;
-        if (text) return NextResponse.json({ digest: text, mode: "ai" });
-      }
-    } catch {
-      // fall through to rule-based
-    }
+
+  // Create provider based on environment (LLM if configured, rule-based otherwise)
+  const provider = createDigestProvider();
+  const fallback = new RuleBasedProvider();
+
+  try {
+    const digest = await provider.generate(top);
+    return NextResponse.json({ digest, mode: provider.mode });
+  } catch (error) {
+    // On LLM failure, fall back to rule-based
+    console.error("LLM digest failed, falling back to rule-based:", error);
+    const digest = await fallback.generate(top);
+    return NextResponse.json({ digest, mode: fallback.mode });
   }
-  return NextResponse.json({ digest: ruleBasedDigest(top), mode: "rule-based" });
 }

@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Spec Change Reminder",
+      "trigger": "PostFileSave",
+      "description": "Remind to update tasks.md when specification files change",
+      "matcher": "(requirements|design)\\.md$",
+      "action": {
+        "type": "agent",
+        "prompt": "⚠️ 规格文件已更新。请记得检查并更新 tasks.md 以反映这些变更。\n\nThe specification files (requirements.md or design.md) have been updated. Please remember to check and update tasks.md to reflect these changes."
+      }
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "2.1 LLM digest: OpenAI-compatible provider via `LLM_BASE_URL` / `LLM_API_KEY` (works with new-api on the user's VPS), fallback to rule-based": [
+      {
+        "executionId": "14fcae0f-f524-429c-8d82-eac7d1644ded",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793951546518
+      },
+      {
+        "executionId": "14fcae0f-f524-429c-8d82-eac7d1644ded",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793951556946
+      },
+      {
+        "executionId": "0a6cbcf7-314b-4f17-885e-87dec3da284b",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793951901883
+      },
+      {
+        "executionId": "af0a0040-5b0b-4f08-95a2-1f24ccb1a4ae",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793952211396
+      },
+      {
+        "executionId": "af0a0040-5b0b-4f08-95a2-1f24ccb1a4ae",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793952657485
+      }
+    ],
+    "2.2 Property-based tests for the parser (fast-check) + unit tests for dead detection": [
+      {
+        "executionId": "14fcae0f-f524-429c-8d82-eac7d1644ded",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793951546627
+      },
+      {
+        "executionId": "af0a0040-5b0b-4f08-95a2-1f24ccb1a4ae",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793952666870
+      },
+      {
+        "executionId": "af0a0040-5b0b-4f08-95a2-1f24ccb1a4ae",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793955296842
+      }
+    ],
+    "2.3 Kiro hooks: on-save run `tsc --noEmit`; on spec change remind to update tasks.md": [
+      {
+        "executionId": "14fcae0f-f524-429c-8d82-eac7d1644ded",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793951546695
+      },
+      {
+        "executionId": "af0a0040-5b0b-4f08-95a2-1f24ccb1a4ae",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793955303351
+      },
+      {
+        "executionId": "af0a0040-5b0b-4f08-95a2-1f24ccb1a4ae",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793955406671
+      }
+    ],
+    "2.4 OPML import/export (one file, big demo win for RSS users)": [
+      {
+        "executionId": "14fcae0f-f524-429c-8d82-eac7d1644ded",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793951546777
+      },
+      {
+        "executionId": "af0a0040-5b0b-4f08-95a2-1f24ccb1a4ae",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793955412808
+      },
+      {
+        "executionId": "af0a0040-5b0b-4f08-95a2-1f24ccb1a4ae",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793956054286
+      }
+    ],
+    "2.5 Deploy to VPS / Vercel, public URL ready for judges": [
+      {
+        "executionId": "14fcae0f-f524-429c-8d82-eac7d1644ded",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793951546847
+      },
+      {
+        "executionId": "af0a0040-5b0b-4f08-95a2-1f24ccb1a4ae",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793956060810
+      },
+      {
+        "executionId": "85c920b8-1f7f-4139-a9eb-184a57c8b0dc",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793956854208
+      }
+    ],
+    "3.1 Record <3 min YouTube demo video (problem → subscribe → dead feed → replacement → digest)": [
+      {
+        "executionId": "14fcae0f-f524-429c-8d82-eac7d1644ded",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793951546922
+      }
+    ],
+    "3.2 Write Devpost text + \"How Kiro was used\" (spec-driven, hooks, steering, MCP, PBT — with concrete examples)": [
+      {
+        "executionId": "14fcae0f-f524-429c-8d82-eac7d1644ded",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793951546989
+      }
+    ],
+    "3.3 Social Blitz post starting with #KiroweenHackathon26 + optional blog post": [
+      {
+        "executionId": "14fcae0f-f524-429c-8d82-eac7d1644ded",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793951547049
+      }
+    ],
+    "3.4 Final check: public GitHub repo, LICENSE visible, `/.kiro` at root, demo URL works logged-out": [
+      {
+        "executionId": "14fcae0f-f524-429c-8d82-eac7d1644ded",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793951547126
+      }
+    ],
+    "3.5 Submit on Devpost before Dec 4 14:00 PT — do NOT leave it to the last day": [
+      {
+        "executionId": "14fcae0f-f524-429c-8d82-eac7d1644ded",
+        "chatSessionId": "sess_a866013b-06d8-4255-b653-d66ff6ed85bd",
+        "timestamp": 1793951547189
+      }
+    ]
+  }
+}

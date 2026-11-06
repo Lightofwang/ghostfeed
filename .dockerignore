@@ -1,0 +1,61 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Testing
+coverage
+.nyc_output
+
+# Next.js
+.next
+out
+
+# Production
+build
+dist
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+.vscode
+.idea
+
+# Local env files
+.env*.local
+.env
+
+# Vercel
+.vercel
+
+# Git
+.git
+.gitignore
+
+# Documentation (not needed in container)
+README.md
+DEPLOYMENT.md
+DEPLOYMENT-CHECKLIST.md
+WEEK1.md
+test-manual.md
+TASK-2.1-VERIFICATION.md
+
+# Test files
+*.test.ts
+*.test.js
+test-*.ts
+vitest.config.ts
+
+# Kiro
+.kiro
+
+# Logs
+logs
+*.log
+
+# OS
+Thumbs.db

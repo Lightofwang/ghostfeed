@@ -11,19 +11,56 @@ Algorithmic feeds bury what readers actually want. GhostFeed brings back reader-
 - **Replacements** — dead sources get a curated replacement suggestion (never an invented URL), addable in one click.
 - **Daily digest** — top items of the last 24h. Rule-based by default; set `LLM_BASE_URL` + `LLM_API_KEY` (OpenAI-compatible, e.g. new-api) for an AI summary, with automatic fallback to rule-based.
 
-## Run it
+## Run it locally
 ```bash
 npm install
 npm run dev    # http://localhost:3000
 npm run build  # production check
 ```
 
-Optional (AI digest):
+## Deploy it
+
+**Multiple deployment options available** — see [DEPLOYMENT.md](DEPLOYMENT.md) for complete guides.
+
+Since Vercel is not available, we provide **5 deployment options**:
+
+1. **Docker + VPS** (Recommended) — Full control, easy to manage
+2. **Netlify** — Easiest, free tier, auto-deploy
+3. **Railway** — Simple, $5 free credit, auto-deploy
+4. **Cloudflare Pages** — Free, global CDN, unlimited bandwidth
+5. **PM2 + Nginx + VPS** — Traditional setup, full control
+
+**Quick Start (Docker + VPS)**:
+```bash
+# On your VPS
+git clone <your-repo>
+cd ghostfeed
+docker compose up -d
+```
+
+**Quick Start (Netlify)**:
+```bash
+# Push to GitHub, then connect at netlify.com
+git push origin main
+# Follow Netlify dashboard to import project
+```
+
+The app runs without environment variables (rule-based digest). For AI-powered digest, set `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL` in your deployment platform.
+
+### AI Digest (Optional)
+GhostFeed uses a **provider interface** for digest generation with two implementations:
+
+1. **Rule-based** (default) — simple numbered list, no LLM needed
+2. **AI-powered** — connects to any OpenAI-compatible endpoint (OpenAI, new-api, local models)
+
+To enable AI summaries, create a `.env.local` file:
 ```bash
 LLM_BASE_URL=https://your-new-api.example.com/v1
 LLM_API_KEY=sk-...
-LLM_MODEL=gpt-4o-mini
+LLM_MODEL=gpt-4o-mini  # optional, defaults to gpt-4o-mini
 ```
+
+The system **automatically falls back** to rule-based digest if the LLM fails — the page never crashes.
 
 ## How Kiro was used
 - **Spec-driven development**: `.kiro/specs/ghostfeed/` holds `requirements.md`, `design.md`, and `tasks.md` — the spec was written before the code.

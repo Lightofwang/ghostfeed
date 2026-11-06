@@ -4,6 +4,7 @@ import type { Feed, FeedItem } from "@/lib/types";
 import { SEED_FEEDS } from "@/lib/seed";
 import { detectStatus, daysSince } from "@/lib/dead";
 import { suggestReplacements } from "@/lib/replacements";
+import { exportToOPML, importFromOPML, downloadOPML } from "@/lib/opml";
 const LS_KEY = "ghostfeed.feeds.v1";
 function loadFeeds(): Feed[] {
   try { const raw = localStorage.getItem(LS_KEY); if (raw) return JSON.parse(raw) as Feed[]; } catch {}
@@ -16,6 +17,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [digest, setDigest] = useState<{ text: string; mode: string } | null>(null);
+  const [importStatus, setImportStatus] = useState("");
   useEffect(() => { setFeeds(loadFeeds()); }, []);
   useEffect(() => { if (feeds.length) localStorage.setItem(LS_KEY, JSON.stringify(feeds)); }, [feeds]);
   useEffect(() => {
@@ -53,6 +55,87 @@ export default function Home() {
     const r = await fetch("/api/digest", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items }) });
     const d = await r.json(); setDigest({ text: d.digest, mode: d.mode });
   }
+
+  function handleExportOPML() {
+    try {
+      const opmlContent = exportToOPML(feeds);
+      downloadOPML(opmlContent);
+      setImportStatus("✓ OPML exported successfully");
+      setTimeout(() => setImportStatus(""), 3000);
+    } catch (e) {
+      setImportStatus("✗ Export failed: " + (e instanceof Error ? e.message : "Unknown error"));
+      setTimeout(() => setImportStatus(""), 5000);
+    }
+  }
+
+  async function handleImportOPML(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    const inputElement = e.target;
+    if (!file) return;
+
+    setImportStatus("Importing...");
+
+    try {
+      const text = await file.text();
+      const urls = importFromOPML(text);
+
+      // Filter out duplicates
+      const existingUrls = new Set(feeds.map(f => f.url));
+      const newUrls = urls.filter(url => !existingUrls.has(url));
+
+      if (newUrls.length === 0) {
+        setImportStatus("✓ No new feeds to import (all already subscribed)");
+        setTimeout(() => setImportStatus(""), 5000);
+        inputElement.value = "";
+        return;
+      }
+
+      // Add each new feed
+      let successCount = 0;
+      const newFeeds: Feed[] = [];
+
+      for (const url of newUrls) {
+        try {
+          const r = await fetch(`/api/feeds?url=${encodeURIComponent(url)}`);
+          const d = await r.json();
+          if (r.ok) {
+            const feed: Feed = {
+              id: `f-${Date.now()}-${successCount}`,
+              url: url,
+              title: d.title || "Untitled Feed",
+              siteUrl: d.siteUrl,
+              status: detectStatus({ lastPublishedAt: d.lastPublishedAt, consecutiveFailures: 0 }),
+              lastPublishedAt: d.lastPublishedAt,
+              lastFetchedAt: new Date().toISOString(),
+              consecutiveFailures: 0
+            };
+            newFeeds.push(feed);
+            successCount++;
+          }
+        } catch {
+          // Skip feeds that fail to fetch
+          continue;
+        }
+      }
+
+      if (successCount > 0) {
+        setFeeds(prev => [...prev, ...newFeeds]);
+        setImportStatus(`✓ Successfully imported ${successCount} feed${successCount !== 1 ? 's' : ''}`);
+      } else {
+        setImportStatus("✗ Could not import any feeds (all failed to fetch)");
+      }
+
+      setTimeout(() => setImportStatus(""), 5000);
+
+      // Reset file input
+      inputElement.value = "";
+    } catch (err) {
+      setImportStatus("✗ Import failed: " + (err instanceof Error ? err.message : "Invalid OPML file"));
+      setTimeout(() => setImportStatus(""), 5000);
+      inputElement.value = "";
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#0c0a12] text-zinc-100">
       <div className="mx-auto max-w-3xl px-5 py-10">
@@ -63,6 +146,28 @@ export default function Home() {
           <button disabled={loading} className="rounded-lg bg-orange-500 px-4 py-2 font-semibold text-black disabled:opacity-50">{loading ? "Summoning…" : "Add feed"}</button>
         </form>
         {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+
+        <div className="mt-4 flex gap-2 items-center">
+          <button
+            onClick={handleExportOPML}
+            disabled={feeds.length === 0}
+            className="rounded-lg border border-purple-500 px-3 py-1.5 text-sm text-purple-300 hover:bg-purple-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Export all feeds as OPML"
+          >
+            📤 Export OPML
+          </button>
+          <label className="rounded-lg border border-purple-500 px-3 py-1.5 text-sm text-purple-300 hover:bg-purple-500/10 cursor-pointer">
+            📥 Import OPML
+            <input
+              type="file"
+              accept=".opml,.xml"
+              onChange={handleImportOPML}
+              className="hidden"
+            />
+          </label>
+          {importStatus && <span className="text-sm text-zinc-400">{importStatus}</span>}
+        </div>
+
         <div className="mt-6 flex flex-wrap gap-2">
           {feeds.map((f) => (
             <span key={f.id} className="rounded-full border border-zinc-700 px-3 py-1 text-sm">{f.status === "dead" ? "🪦 " : "✨ "}{f.title}<button className="ml-2 text-zinc-500" onClick={() => setFeeds((p) => p.filter((x) => x.id !== f.id))} aria-label={`Remove ${f.title}`}>×</button></span>

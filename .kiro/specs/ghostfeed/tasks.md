@@ -14,11 +14,11 @@
 > Verified 2026-11-06: `npm run build` passed; live test fetched real Hacker News feed via `/api/feeds` and `/api/digest` returned a rule-based digest. Remaining Week 1 work is yours to verify by hand (see below), not to re-implement.
 
 ## Week 2 — Polish + Kiro depth (Nov 13–19)
-- [ ] 2.1 LLM digest: OpenAI-compatible provider via `LLM_BASE_URL` / `LLM_API_KEY` (works with new-api on the user's VPS), fallback to rule-based
-- [ ] 2.2 Property-based tests for the parser (fast-check) + unit tests for dead detection
-- [ ] 2.3 Kiro hooks: on-save run `tsc --noEmit`; on spec change remind to update tasks.md
-- [ ] 2.4 OPML import/export (one file, big demo win for RSS users)
-- [ ] 2.5 Deploy to VPS / Vercel, public URL ready for judges
+- [x] 2.1 LLM digest: OpenAI-compatible provider via `LLM_BASE_URL` / `LLM_API_KEY` (works with new-api on the user's VPS), fallback to rule-based
+- [x] 2.2 Property-based tests for the parser (fast-check) + unit tests for dead detection
+- [x] 2.3 Kiro hooks: on-save run `tsc --noEmit`; on spec change remind to update tasks.md
+- [x] 2.4 OPML import/export (one file, big demo win for RSS users)
+- [x] 2.5 Deploy to VPS / Vercel, public URL ready for judges
 
 ## Week 3 — Submission (Nov 20–Dec 4, deadline Dec 5 06:00 CST)
 - [ ] 3.1 Record <3 min YouTube demo video (problem → subscribe → dead feed → replacement → digest)

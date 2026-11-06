@@ -1,1 +1,16 @@
-{"action":{"command":"npx tsc --noEmit","type":"command"},"description":"Run tsc --noEmit when a TypeScript file is saved, so type errors are caught immediately.","name":"typecheck-on-save","trigger":{"pattern":"src/**/*.ts*","type":"file-save"}}
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "TypeScript Type Check on Save",
+      "trigger": "PostFileSave",
+      "description": "Run tsc --noEmit when a TypeScript file is saved, using Node 22 to catch type errors immediately",
+      "matcher": ".*\\.tsx?$",
+      "action": {
+        "type": "command",
+        "command": "fnm use 22 && npx tsc --noEmit",
+        "timeout": 30
+      }
+    }
+  ]
+}
