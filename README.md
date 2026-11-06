@@ -1,6 +1,6 @@
 # 👻 GhostFeed — RSS, back from the dead
 
-[![Deploy Status](https://api.netlify.com/api/v1/badges/f881c1-placeholder/deploy-status)](https://statuesque-cocada-f881c1.netlify.app)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/1b849ac1-f3fd-4a23-b464-8ebef4ee9b5d/deploy-status)](https://app.netlify.com/projects/statuesque-cocada-f881c1/deploys)
 [![Live Demo](https://img.shields.io/badge/demo-live-success)](https://statuesque-cocada-f881c1.netlify.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
