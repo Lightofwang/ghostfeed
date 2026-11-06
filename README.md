@@ -1,6 +1,12 @@
 # 👻 GhostFeed — RSS, back from the dead
 
+[![Deploy Status](https://api.netlify.com/api/v1/badges/f881c1-placeholder/deploy-status)](https://statuesque-cocada-f881c1.netlify.app)
+[![Live Demo](https://img.shields.io/badge/demo-live-success)](https://statuesque-cocada-f881c1.netlify.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Kiroween 2026 · Resurrection category · Built with Kiro**
+
+**🌐 [Try Live Demo](https://statuesque-cocada-f881c1.netlify.app)** | **📖 [Deployment Guide](DEPLOYMENT.md)**
 
 Algorithmic feeds bury what readers actually want. GhostFeed brings back reader-owned subscription: subscribe to any RSS/Atom feed, see at a glance which sources are alive or dead, and get a short daily digest. **No sign-up required** — judges can try it in under a minute.
 
