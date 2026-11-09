@@ -90,7 +90,7 @@ describe("Home page seed feeds auto-load", () => {
     });
   });
 
-  it("shows loading state initially and renders fast feeds immediately without waiting for slow feeds", async () => {
+  it("waits for all 4 seed feeds to finish and keeps at most 5 newest items per feed so all 4 sources appear in Latest", async () => {
     const resolvers = new Map<string, (res: Response) => void>();
 
     vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
@@ -107,27 +107,23 @@ describe("Home page seed feeds auto-load", () => {
       root.render(<Home />);
     });
 
-    // While all 4 feeds are still in flight, should show loading state instead of 'No items yet'
+    // While feeds are in flight, should show loading state
     expect(container.textContent).toContain("Summoning latest articles…");
-    expect(container.textContent).not.toContain("No items yet — add a feed above.");
 
-    // Resolve ONLY the first feed (Hacker News) while the other 3 remain pending
+    // Resolve ONLY the first feed (Hacker News) with 15 very recent articles
     await act(async () => {
-      const resolveHN = resolvers.get("https://hnrss.org/frontpage");
-      resolveHN?.(
+      resolvers.get("https://hnrss.org/frontpage")?.(
         new Response(
           JSON.stringify({
-            title: "Hacker News",
-            lastPublishedAt: new Date().toISOString(),
-            items: [
-              {
-                title: "Fast HN Article",
-                link: "https://news.ycombinator.com/item?id=1",
-                pubDate: new Date().toISOString(),
-                sourceTitle: "Hacker News",
-                sourceUrl: "https://hnrss.org/frontpage",
-              },
-            ],
+            title: "Hacker News: Front Page",
+            lastPublishedAt: "2026-11-09T12:00:00.000Z",
+            items: Array.from({ length: 15 }, (_, i) => ({
+              title: `HN Article ${i + 1}`,
+              link: `https://news.ycombinator.com/item?id=${i + 1}`,
+              pubDate: new Date(Date.UTC(2026, 10, 9, 12, 0, 15 - i)).toISOString(),
+              sourceTitle: "Hacker News",
+              sourceUrl: "https://hnrss.org/frontpage",
+            })),
           }),
           { status: 200, headers: { "Content-Type": "application/json" } }
         )
@@ -135,10 +131,50 @@ describe("Home page seed feeds auto-load", () => {
       await new Promise((r) => setTimeout(r, 10));
     });
 
-    // Fast HN Article must appear immediately even though the other 3 feeds haven't resolved yet
-    expect(container.textContent).toContain("Fast HN Article");
+    // Should still wait for the remaining feeds before rendering the list
+    expect(container.textContent).toContain("Summoning latest articles…");
+    expect(container.textContent).not.toContain("HN Article 1");
+
+    // Resolve the remaining 3 feeds (each with 10 articles from earlier dates)
+    await act(async () => {
+      const otherSeeds = [
+        { url: "https://www.theverge.com/rss/index.xml", name: "The Verge", day: 8 },
+        { url: "https://css-tricks.com/feed/", name: "CSS-Tricks", day: 7 },
+        { url: "https://www.nature.com/nature.rss", name: "Nature News", day: 6 },
+      ];
+      for (const s of otherSeeds) {
+        resolvers.get(s.url)?.(
+          new Response(
+            JSON.stringify({
+              title: s.name,
+              lastPublishedAt: new Date(Date.UTC(2026, 10, s.day, 12, 0, 0)).toISOString(),
+              items: Array.from({ length: 10 }, (_, i) => ({
+                title: `${s.name} Article ${i + 1}`,
+                link: `https://example.com/${s.day}/${i + 1}`,
+                pubDate: new Date(Date.UTC(2026, 10, s.day, 12, 0, 10 - i)).toISOString(),
+                sourceTitle: s.name,
+                sourceUrl: s.url,
+              })),
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          )
+        );
+      }
+      await new Promise((r) => setTimeout(r, 20));
+    });
+
+    // Now all 4 feeds have finished: each feed should contribute 5 items (total 20 items)
     expect(container.textContent).not.toContain("Summoning latest articles…");
-    expect(container.textContent).not.toContain("No items yet — add a feed above.");
+    expect(container.textContent).toContain("HN Article 1");
+    expect(container.textContent).toContain("HN Article 5");
+    expect(container.textContent).not.toContain("HN Article 6");
+    expect(container.textContent).toContain("The Verge Article 1");
+    expect(container.textContent).toContain("The Verge Article 5");
+    expect(container.textContent).not.toContain("The Verge Article 6");
+    expect(container.textContent).toContain("CSS-Tricks Article 1");
+    expect(container.textContent).toContain("CSS-Tricks Article 5");
+    expect(container.textContent).toContain("Nature News Article 1");
+    expect(container.textContent).toContain("Nature News Article 5");
 
     await act(async () => {
       root.unmount();

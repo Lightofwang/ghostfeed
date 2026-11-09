@@ -6,6 +6,7 @@ import { detectStatus, daysSince } from "@/lib/dead";
 import { suggestReplacements } from "@/lib/replacements";
 import { exportToOPML, importFromOPML, downloadOPML } from "@/lib/opml";
 const LS_KEY = "ghostfeed.feeds.v1";
+const ITEMS_PER_FEED = 5;
 function loadFeeds(): Feed[] {
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -15,6 +16,12 @@ function loadFeeds(): Feed[] {
     }
   } catch {}
   return SEED_FEEDS;
+}
+function pickFeedItems(rawItems: FeedItem[], sourceTitle: string): FeedItem[] {
+  return [...rawItems]
+    .map((it) => ({ ...it, sourceTitle: sourceTitle || it.sourceTitle }))
+    .sort((a, b) => (b.pubDate ?? "").localeCompare(a.pubDate ?? ""))
+    .slice(0, ITEMS_PER_FEED);
 }
 export default function Home() {
   const [feeds, setFeeds] = useState<Feed[]>([]);
@@ -34,43 +41,44 @@ export default function Home() {
     if (toFetch.length === 0) return;
     toFetch.forEach((f) => fetchedUrlsRef.current.add(f.url));
     setFetchingFeeds(true);
-    Promise.allSettled(
-      toFetch.map(async (f) => {
-        try {
-          const r = await fetch(`/api/feeds?url=${encodeURIComponent(f.url)}`);
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          const d = await r.json();
-          const feedItems: FeedItem[] = d.items ?? [];
-          const updatedFeed: Feed = {
-            ...f,
-            title: f.title || d.title,
-            status: detectStatus({ lastPublishedAt: d.lastPublishedAt, consecutiveFailures: 0 }),
-            lastPublishedAt: d.lastPublishedAt,
-            lastFetchedAt: new Date().toISOString(),
-            consecutiveFailures: 0,
-            lastError: undefined,
-          };
-          setFeeds((prev) => prev.map((item) => (item.id === f.id ? updatedFeed : item)));
-          if (feedItems.length > 0) {
-            setItems((prev) =>
-              [...prev, ...feedItems].sort((a, b) => (b.pubDate ?? "").localeCompare(a.pubDate ?? ""))
-            );
+    (async () => {
+      const all: FeedItem[] = [];
+      const updates = new Map<string, Feed>();
+      await Promise.all(
+        toFetch.map(async (f) => {
+          try {
+            const r = await fetch(`/api/feeds?url=${encodeURIComponent(f.url)}`);
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const d = await r.json();
+            const displayTitle = f.title || d.title;
+            all.push(...pickFeedItems(d.items ?? [], displayTitle));
+            updates.set(f.id, {
+              ...f,
+              title: displayTitle,
+              status: detectStatus({ lastPublishedAt: d.lastPublishedAt, consecutiveFailures: 0 }),
+              lastPublishedAt: d.lastPublishedAt,
+              lastFetchedAt: new Date().toISOString(),
+              consecutiveFailures: 0,
+              lastError: undefined,
+            });
+          } catch (e) {
+            const failures = f.consecutiveFailures + 1;
+            updates.set(f.id, {
+              ...f,
+              status: detectStatus({ lastPublishedAt: f.lastPublishedAt, consecutiveFailures: failures }),
+              lastFetchedAt: new Date().toISOString(),
+              consecutiveFailures: failures,
+              lastError: e instanceof Error ? e.message : "Fetch failed",
+            });
           }
-        } catch (e) {
-          const failures = f.consecutiveFailures + 1;
-          const failedFeed: Feed = {
-            ...f,
-            status: detectStatus({ lastPublishedAt: f.lastPublishedAt, consecutiveFailures: failures }),
-            lastFetchedAt: new Date().toISOString(),
-            consecutiveFailures: failures,
-            lastError: e instanceof Error ? e.message : "Fetch failed",
-          };
-          setFeeds((prev) => prev.map((item) => (item.id === f.id ? failedFeed : item)));
-        }
-      })
-    ).finally(() => {
+        })
+      );
+      setFeeds((prev) => prev.map((f) => updates.get(f.id) ?? f));
+      setItems((prev) =>
+        [...prev, ...all].sort((a, b) => (b.pubDate ?? "").localeCompare(a.pubDate ?? ""))
+      );
       setFetchingFeeds(false);
-    });
+    })();
   }, [feeds]);
   const dead = useMemo(() => feeds.filter((f) => f.status === "dead"), [feeds]);
   async function addFeed(e: React.FormEvent) {
@@ -82,7 +90,10 @@ export default function Home() {
       if (!r.ok) throw new Error(d.error ?? "Could not add this feed.");
       fetchedUrlsRef.current.add(trimmedUrl);
       const feed: Feed = { id: `f-${Date.now()}`, url: trimmedUrl, title: d.title, siteUrl: d.siteUrl, status: detectStatus({ lastPublishedAt: d.lastPublishedAt, consecutiveFailures: 0 }), lastPublishedAt: d.lastPublishedAt, lastFetchedAt: new Date().toISOString(), consecutiveFailures: 0 };
-      setFeeds((p) => [...p, feed]); setItems((p) => [...(d.items ?? []), ...p]); setUrl("");
+      const picked = pickFeedItems(d.items ?? [], d.title);
+      setFeeds((p) => [...p, feed]);
+      setItems((p) => [...picked, ...p].sort((a, b) => (b.pubDate ?? "").localeCompare(a.pubDate ?? "")));
+      setUrl("");
     } catch (e) { setError(e instanceof Error ? e.message : "Could not add this feed."); } finally { setLoading(false); }
   }
   async function makeDigest() {
@@ -135,10 +146,11 @@ export default function Home() {
           const d = await r.json();
           if (r.ok) {
             fetchedUrlsRef.current.add(url);
+            const title = d.title || "Untitled Feed";
             const feed: Feed = {
               id: `f-${Date.now()}-${successCount}`,
               url: url,
-              title: d.title || "Untitled Feed",
+              title,
               siteUrl: d.siteUrl,
               status: detectStatus({ lastPublishedAt: d.lastPublishedAt, consecutiveFailures: 0 }),
               lastPublishedAt: d.lastPublishedAt,
@@ -146,7 +158,7 @@ export default function Home() {
               consecutiveFailures: 0
             };
             newFeeds.push(feed);
-            newItems.push(...(d.items ?? []));
+            newItems.push(...pickFeedItems(d.items ?? [], title));
             successCount++;
           }
         } catch {
