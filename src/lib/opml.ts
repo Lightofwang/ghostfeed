@@ -41,9 +41,9 @@ export function importFromOPML(opmlContent: string): string[] {
     const parser = new DOMParser();
     const doc = parser.parseFromString(opmlContent, "text/xml");
     
-    // Check for parsing errors
+    // Check for parsing errors (including unclosed tags in environments like happy-dom)
     const parserError = doc.querySelector("parsererror");
-    if (parserError) {
+    if (parserError || /<[^>]*</.test(opmlContent) || !doc.querySelector("opml")) {
       throw new Error("Invalid XML format");
     }
     

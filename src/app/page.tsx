@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Feed, FeedItem } from "@/lib/types";
 import { SEED_FEEDS } from "@/lib/seed";
 import { detectStatus, daysSince } from "@/lib/dead";
@@ -7,7 +7,13 @@ import { suggestReplacements } from "@/lib/replacements";
 import { exportToOPML, importFromOPML, downloadOPML } from "@/lib/opml";
 const LS_KEY = "ghostfeed.feeds.v1";
 function loadFeeds(): Feed[] {
-  try { const raw = localStorage.getItem(LS_KEY); if (raw) return JSON.parse(raw) as Feed[]; } catch {}
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Feed[];
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
   return SEED_FEEDS;
 }
 export default function Home() {
@@ -18,36 +24,43 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [digest, setDigest] = useState<{ text: string; mode: string } | null>(null);
   const [importStatus, setImportStatus] = useState("");
+  const fetchedUrlsRef = useRef<Set<string>>(new Set());
   useEffect(() => { setFeeds(loadFeeds()); }, []);
   useEffect(() => { if (feeds.length) localStorage.setItem(LS_KEY, JSON.stringify(feeds)); }, [feeds]);
   useEffect(() => {
     if (feeds.length === 0) return;
+    const toFetch = feeds.filter((f) => !fetchedUrlsRef.current.has(f.url));
+    if (toFetch.length === 0) return;
+    toFetch.forEach((f) => fetchedUrlsRef.current.add(f.url));
     (async () => {
       const all: FeedItem[] = [];
-      const updated = await Promise.all(feeds.map(async (f) => {
+      const updates = new Map<string, Feed>();
+      await Promise.all(toFetch.map(async (f) => {
         try {
           const r = await fetch(`/api/feeds?url=${encodeURIComponent(f.url)}`);
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           const d = await r.json();
           all.push(...(d.items ?? []));
-          return { ...f, title: d.title ?? f.title, status: detectStatus({ lastPublishedAt: d.lastPublishedAt, consecutiveFailures: 0 }), lastPublishedAt: d.lastPublishedAt, lastFetchedAt: new Date().toISOString(), consecutiveFailures: 0, lastError: undefined };
+          updates.set(f.id, { ...f, title: f.title || d.title, status: detectStatus({ lastPublishedAt: d.lastPublishedAt, consecutiveFailures: 0 }), lastPublishedAt: d.lastPublishedAt, lastFetchedAt: new Date().toISOString(), consecutiveFailures: 0, lastError: undefined });
         } catch (e) {
           const failures = f.consecutiveFailures + 1;
-          return { ...f, status: detectStatus({ lastPublishedAt: f.lastPublishedAt, consecutiveFailures: failures }), lastFetchedAt: new Date().toISOString(), consecutiveFailures: failures, lastError: e instanceof Error ? e.message : "Fetch failed" };
+          updates.set(f.id, { ...f, status: detectStatus({ lastPublishedAt: f.lastPublishedAt, consecutiveFailures: failures }), lastFetchedAt: new Date().toISOString(), consecutiveFailures: failures, lastError: e instanceof Error ? e.message : "Fetch failed" });
         }
       }));
-      setFeeds(updated);
-      setItems(all.sort((a, b) => (b.pubDate ?? "").localeCompare(a.pubDate ?? "")));
+      setFeeds((prev) => prev.map((f) => updates.get(f.id) ?? f));
+      setItems((prev) => [...prev, ...all].sort((a, b) => (b.pubDate ?? "").localeCompare(a.pubDate ?? "")));
     })();
-  }, []);
+  }, [feeds]);
   const dead = useMemo(() => feeds.filter((f) => f.status === "dead"), [feeds]);
   async function addFeed(e: React.FormEvent) {
     e.preventDefault(); setError(""); setLoading(true);
     try {
-      const r = await fetch(`/api/feeds?url=${encodeURIComponent(url.trim())}`);
+      const trimmedUrl = url.trim();
+      const r = await fetch(`/api/feeds?url=${encodeURIComponent(trimmedUrl)}`);
       const d = await r.json();
       if (!r.ok) throw new Error(d.error ?? "Could not add this feed.");
-      const feed: Feed = { id: `f-${Date.now()}`, url: url.trim(), title: d.title, siteUrl: d.siteUrl, status: detectStatus({ lastPublishedAt: d.lastPublishedAt, consecutiveFailures: 0 }), lastPublishedAt: d.lastPublishedAt, lastFetchedAt: new Date().toISOString(), consecutiveFailures: 0 };
+      fetchedUrlsRef.current.add(trimmedUrl);
+      const feed: Feed = { id: `f-${Date.now()}`, url: trimmedUrl, title: d.title, siteUrl: d.siteUrl, status: detectStatus({ lastPublishedAt: d.lastPublishedAt, consecutiveFailures: 0 }), lastPublishedAt: d.lastPublishedAt, lastFetchedAt: new Date().toISOString(), consecutiveFailures: 0 };
       setFeeds((p) => [...p, feed]); setItems((p) => [...(d.items ?? []), ...p]); setUrl("");
     } catch (e) { setError(e instanceof Error ? e.message : "Could not add this feed."); } finally { setLoading(false); }
   }
@@ -93,12 +106,14 @@ export default function Home() {
       // Add each new feed
       let successCount = 0;
       const newFeeds: Feed[] = [];
+      const newItems: FeedItem[] = [];
 
       for (const url of newUrls) {
         try {
           const r = await fetch(`/api/feeds?url=${encodeURIComponent(url)}`);
           const d = await r.json();
           if (r.ok) {
+            fetchedUrlsRef.current.add(url);
             const feed: Feed = {
               id: `f-${Date.now()}-${successCount}`,
               url: url,
@@ -110,6 +125,7 @@ export default function Home() {
               consecutiveFailures: 0
             };
             newFeeds.push(feed);
+            newItems.push(...(d.items ?? []));
             successCount++;
           }
         } catch {
@@ -120,6 +136,7 @@ export default function Home() {
 
       if (successCount > 0) {
         setFeeds(prev => [...prev, ...newFeeds]);
+        setItems(prev => [...newItems, ...prev].sort((a, b) => (b.pubDate ?? "").localeCompare(a.pubDate ?? "")));
         setImportStatus(`✓ Successfully imported ${successCount} feed${successCount !== 1 ? 's' : ''}`);
       } else {
         setImportStatus("✗ Could not import any feeds (all failed to fetch)");
@@ -170,7 +187,7 @@ export default function Home() {
 
         <div className="mt-6 flex flex-wrap gap-2">
           {feeds.map((f) => (
-            <span key={f.id} className="rounded-full border border-zinc-700 px-3 py-1 text-sm">{f.status === "dead" ? "🪦 " : "✨ "}{f.title}<button className="ml-2 text-zinc-500" onClick={() => setFeeds((p) => p.filter((x) => x.id !== f.id))} aria-label={`Remove ${f.title}`}>×</button></span>
+            <span key={f.id} className="rounded-full border border-zinc-700 px-3 py-1 text-sm">{f.status === "dead" ? "🪦 " : "✨ "}{f.title}<button className="ml-2 text-zinc-500" onClick={() => { fetchedUrlsRef.current.delete(f.url); setFeeds((p) => p.filter((x) => x.id !== f.id)); }} aria-label={`Remove ${f.title}`}>×</button></span>
           ))}
         </div>
         <section className="mt-8">
